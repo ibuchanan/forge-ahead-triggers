@@ -30,6 +30,6 @@ export interface InvocationContext {
 
 /** A Forge trigger handler with a family-specific event and result type. */
 export type TriggerHandler<
-  Event extends TriggerEvent = TriggerEvent,
+  Event extends object = TriggerEvent,
   Result = void,
 > = (event: Event, context: InvocationContext) => Result | Promise<Result>;

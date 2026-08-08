@@ -6,5 +6,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["root-contracts.ts"]
+  "include": ["*.ts"]
 }
