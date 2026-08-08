@@ -28,3 +28,4 @@ yarn-error.log*
 !.env.example
 .turbo
 /.cocoindex_code/
+.scratch/

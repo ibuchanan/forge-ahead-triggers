@@ -65,7 +65,7 @@
   "scripts": {
     "build": "tsdown",
     "changelog": "touch CHANGELOG.md && git cliff --offline --unreleased --prepend CHANGELOG.md",
-    "check": "npm run lint:check && npm run format:check && npm run typecheck && npm run test",
+    "check": "lefthook run pre-push --force",
     "clean": "rm -rf ./node_modules ./dist",
     "dev": "tsdown --watch",
     "format": "biome format --write",
@@ -76,6 +76,7 @@
     "prepare": "npm run build && (lefthook install || true)",
     "release:prepare": "scripts/release-prepare.sh",
     "test": "vitest run --passWithNoTests",
+    "test:consumer": "tsc -p test/consumer/tsconfig.json",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "test:watch": "vitest watch",
     "typecheck": "tsc --noEmit"
