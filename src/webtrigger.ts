@@ -4,7 +4,7 @@ import type {
   WebTriggerResponse as ForgeWebTriggerResponse,
 } from "@forge/api";
 
-import type { TriggerHandler } from "./core.js";
+import type { JSONValue, TriggerHandler } from "./core.js";
 
 /** A web-trigger request received by a Forge function. */
 export interface WebTriggerEvent {
@@ -37,3 +37,19 @@ export type WebTriggerHandler = TriggerHandler<
 export const defineWebTrigger = (
   handler: WebTriggerHandler,
 ): WebTriggerHandler => handler;
+
+/** Build a JSON-bearing `200 OK` Forge web-trigger response. */
+export const buildSuccessResponse = (
+  value: JSONValue = { message: "OK" },
+): WebTriggerResponse => ({
+  body: JSON.stringify(value),
+  headers: { "content-type": ["application/json"] },
+  statusCode: 200,
+  statusText: "OK",
+});
+
+/** Build an empty `204 No Content` Forge web-trigger response. */
+export const buildEmptySuccessResponse = (): WebTriggerResponse => ({
+  statusCode: 204,
+  statusText: "No Content",
+});
