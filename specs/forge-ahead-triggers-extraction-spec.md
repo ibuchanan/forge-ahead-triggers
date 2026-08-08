@@ -1,466 +1,133 @@
-# Specification: extract `@forge-ahead/triggers`
-
-## Purpose
-
-Create a new TypeScript package, `@forge-ahead/triggers`, by **reimplementing and strengthening** the Forge trigger/event contracts currently embedded in `packages/forge-ahead`.
-
-This is not a mechanical file move. The package must establish small public seams that:
+# Specification: `@forge-ahead/triggers`
 
-1. give Forge app authors accurate, contextual types for trigger handlers;
-2. make the Forge web-trigger response contract difficult to misuse—especially its required `Record<string, string[]>` header shape;
-3. use `@forge-ahead/errors` and `@forge-ahead/logging` deliberately as upstream dependencies;
-4. define a complete, independent public interface for future consumers; and
-5. earn its package boundary through reusable protocol and invocation behavior, not a thin re-export layer.
+## Problem Statement
 
-The immediate empirical motivation is a real Forge web-trigger failure: an application returned a scalar header value such as `"Content-Type": "application/json"`, but Forge requires each header value to be an array of strings. Forge then failed at runtime rather than TypeScript reporting the error during development.
+Forge applications receive several trigger families through a common invocation model, but their public contracts are easy to model imprecisely. Web trigger responses are particularly error-prone: Forge requires every header value to be an array of strings, yet a scalar response header can otherwise reach runtime before failing.
 
-## Scope
+`@forge-ahead/triggers` is a new, private TypeScript package that gives Forge application authors narrow, accurate trigger contracts and focused response utilities. It is inspired by prior Forge application code and current Forge platform documentation, but it has no source-compatibility obligation to an older package and must not preserve legacy names or behavior solely for compatibility.
 
-### In scope
+## Solution
 
-- New package: `packages/triggers`, published as `@forge-ahead/triggers`.
-- Core Forge event/context types currently in `packages/forge-ahead/src/forge/function.ts`.
-- Trigger-family contracts currently in:
-  - `packages/forge-ahead/src/forge/triggers/lifecycle.ts`
-  - `packages/forge-ahead/src/forge/triggers/product.ts`
-  - `packages/forge-ahead/src/forge/triggers/scheduled.ts`
-  - `packages/forge-ahead/src/forge/triggers/webtrigger.ts`
-- Web-trigger response builders and client-header extraction.
-- An opt-in invocation-logging wrapper that uses the logging package without introducing global side effects.
-- Tests designed and implemented via TDD, including compile-time regression tests.
+Build this repository as the standalone `@forge-ahead/triggers` package. It provides:
 
-### Explicitly out of scope
+- shared, minimal contracts for Forge trigger invocations;
+- independently importable lifecycle, product, scheduled, and web-trigger contracts;
+- a type-safe web-trigger response surface that prevents scalar header values when handlers are declared through `defineWebTrigger`;
+- pure response and header-extraction utilities;
+- an optional, caller-owned invocation-observation wrapper; and
+- consumer-level type validation against the built package exports.
 
-- A generic HTTP package. Forge API routes use `Record<string, string>` headers, while Forge web triggers use `Record<string, string[]>`. Combining them would obscure the platform distinction that caused the incident.
-- New retry, idempotency, event-dispatch, authorization, or product-event filtering frameworks.
-- Changing Forge manifest wiring, deploy behavior, or trigger registrations.
-- Migrating existing application consumers or adding compatibility shims in this change.
-- Replacing `@forge/api` types wholesale.
-- Copying placeholder runtime handlers such as `install`, `heartbeat`, or `productEventHandler` into the new package. The package provides contracts and utilities, not application handlers.
-
-## Evidence and design decision
-
-The package boundary is justified by two existing adapters:
-
-- `forge-ahead` has shared Forge invocation types plus trigger-specific contracts.
-- `forge-bootstrap/src/forge/trigger.ts` independently models web-trigger headers, parameters, response envelopes, and JSON response construction.
-
-That duplicate protocol shows a real seam. However, the trigger families do **not** currently share enough runtime behavior to justify a universal middleware framework. The common package should therefore be shaped as:
-
-- a small root interface for Forge invocation and handler typing;
-- independently importable trigger-family subpaths;
-- a dedicated web-trigger subpath for its special transport contract;
-- one optional observability wrapper with precisely defined behavior.
-
-## Package layout and public imports
-
-Use a tsdown-built ESM package, following the conventions of `packages/errors` and `packages/logging`.
-
-```text
-packages/triggers/
-  src/
-    index.ts
-    core.ts
-    logging.ts
-    lifecycle.ts
-    product.ts
-    scheduled.ts
-    webtrigger.ts
-  test/
-    core.test.ts
-    logging.test.ts
-    lifecycle.test.ts
-    product.test.ts
-    scheduled.test.ts
-    webtrigger.test.ts
-  package.json
-  tsconfig.json
-  tsdown.config.ts
-  vitest.config.ts
-  README.md
-```
-
-Expose only these public paths:
-
-```ts
-@forge-ahead/triggers
-@forge-ahead/triggers/lifecycle
-@forge-ahead/triggers/product
-@forge-ahead/triggers/scheduled
-@forge-ahead/triggers/webtrigger
-```
-
-The root export contains the shared invocation types and the opt-in logging wrapper. Family-specific types and utilities live only at their subpaths. Do not make consumers import from internal `src/*` paths.
-
-## Dependencies
-
-### Required runtime/package dependencies
-
-- `@forge/api` — retain `WebTriggerMethod` typing rather than duplicating or weakening the Forge method type.
-- `@forge-ahead/errors` — use the `ProblemDetails` contract and `toProblemDetails()` conversion for web-trigger error responses.
-- `@forge-ahead/logging` — use its invocation logging contract for the opt-in wrapper described below.
-
-Use the repository’s current dependency-source convention for extracted packages. Do not manually edit `package-lock.json`; update dependencies using the repository’s package-manager workflow.
-
-### Dependency constraints
-
-- The package must not depend on `forge-ahead`. Existing consumers may adopt it independently; this specification does not define or require a compatibility direction.
-- The package must not create a logger. The caller supplies one.
-- The package must not depend on Forge storage, fetch, KVS, JWT, Rovo, manifest parsing, API-route code, or `forge-ahead` type modules. It owns the small JSON and identifier primitives needed by its public declarations.
-- Use type-only imports where a runtime import is not needed.
-
-## Public interface
-
-The final names may differ only when a better name is justified in the implementation notes and preserves the same responsibilities. Do not broaden the surface without a demonstrated caller need.
-
-### Root: shared Forge invocation contract
-
-```ts
-export type JSONValue =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: JSONValue }
-  | JSONValue[];
-
-export interface IdentifiedObject {
-  id: string;
-}
-
-export interface EventContext {
-  cloudId: string;
-  moduleKey: string;
-  userAccess?: { enabled: boolean };
-  [key: string]: JSONValue | undefined;
-}
-
-export interface CommonEvent {
-  context: EventContext;
-  contextToken?: string;
-}
-
-export interface InstallContext {
-  installContext: string;
-  installation?: {
-    ari: { installationId: string };
-    contexts: Array<{ cloudId: string; workspaceId: string }>;
-  };
-}
-
-export type TriggerHandler<TEvent extends CommonEvent, TResult = void> = (
-  event: TEvent,
-  context: InstallContext,
-) => TResult | Promise<TResult>;
-```
-
-`TriggerHandler` is the common vocabulary only. Do not use a broad union such as the existing `ForgeFunctionResponse` as the result constraint. Individual trigger modules must select their own result type.
-
-Do not include the existing broad `ForgeFunction` / `ForgeFunctionResponse` compatibility shapes in the new package. They are not part of this library's public interface.
-
-### Root: opt-in invocation logging
-
-Provide one wrapper with a narrow, observable behavior:
-
-```ts
-export interface InvocationLogger {
-  forgeInvocation(
-    event: unknown,
-    message?: string,
-    options?: ForgeInvocationLogOptions,
-  ): void;
-}
-
-export interface InvocationLoggingOptions {
-  logger: InvocationLogger;
-  message?: string;
-  options?: ForgeInvocationLogOptions;
-}
-
-export function withInvocationLogging<
-  TEvent extends CommonEvent,
-  TResult,
->(
-  handler: TriggerHandler<TEvent, TResult>,
-  logging: InvocationLoggingOptions,
-): TriggerHandler<TEvent, TResult>;
-```
-
-Required behavior:
-
-1. Call `logger.forgeInvocation(event, message, options)` exactly once before invoking the wrapped handler.
-2. Pass the original event and installation context to the wrapped handler unchanged.
-3. Return the handler’s synchronous value or promise unchanged in meaning.
-4. Do not catch, translate, log, or suppress exceptions/rejections. Error policy belongs to the calling handler unless a later, separately specified wrapper is added.
-5. Do not log request bodies or headers directly; delegate to `@forge-ahead/logging`, whose Forge event policy summarizes these fields safely.
-
-Use the narrow `InvocationLogger` interface rather than accepting a concrete Pino logger. This keeps the external seam testable with a small fake while remaining structurally compatible with `ForgeLogger` from `@forge-ahead/logging`.
-
-### Lifecycle subpath
-
-Preserve the event-domain contracts, but omit the sample `install` implementation.
-
-```ts
-export interface App extends IdentifiedObject {
-  version: string;
-  name?: string;
-  ownerAccountId?: string;
-}
-
-export interface InstallationEvent extends CommonEvent, IdentifiedObject {
-  app: App;
-  environment?: IdentifiedObject;
-  eventType?: string;
-  selfGenerated?: boolean;
-  permissions?: { scopes: string[] };
-  installerAccountId: string;
-}
-
-export interface UpgradeEvent extends CommonEvent, IdentifiedObject {
-  app: App;
-  environment?: IdentifiedObject;
-  eventType?: string;
-  selfGenerated?: boolean;
-  permissions?: { scopes: string[] };
-  upgraderAccountId: string;
-}
-
-export type LifecycleEvent = InstallationEvent | UpgradeEvent;
-export type LifecycleHandler = TriggerHandler<LifecycleEvent, void>;
-```
-
-If implementation factors the repeated lifecycle properties into a non-exported or exported `CommonLifecycleEvent`, it must not change the resulting `InstallationEvent` and `UpgradeEvent` structural contracts.
-
-### Product and scheduled subpaths
-
-Keep these intentionally small until there is real family-specific behavior.
-
-```ts
-export type ProductEvent = CommonEvent;
-export type ProductTriggerHandler = TriggerHandler<ProductEvent, void>;
-
-export type ScheduledEvent = CommonEvent;
-export type ScheduledHandler = TriggerHandler<ScheduledEvent, void>;
-```
-
-Use the clearer names above in the new package. Do not add legacy aliases solely for source compatibility.
-
-### Web-trigger subpath
-
-This is the primary functional surface.
-
-```ts
-export type Headers = Record<string, string[]>;
-export type Parameters = Record<string, string[]>;
-
-export interface WebtriggerEvent extends CommonEvent {
-  method: WebTriggerMethod;
-  headers: Headers;
-  queryParameters: Parameters;
-  body?: string;
-  path: string;
-  call?: { functionKey: string };
-}
-
-export interface WebtriggerResponse {
-  body?: string;
-  headers: Headers;
-  statusCode: number;
-  statusText: string;
-}
-
-export type WebtriggerHandler = TriggerHandler<
-  WebtriggerEvent,
-  WebtriggerResponse
->;
-
-export function defineWebtrigger(
-  handler: WebtriggerHandler,
-): WebtriggerHandler;
-
-export function extractClientHeaders(
-  request: Pick<WebtriggerEvent, "headers">,
-): Headers;
-
-export function buildSuccessResponse(
-  message?: object,
-  statusCode?: number,
-  statusText?: string,
-): WebtriggerResponse;
-
-export function buildErrorResponse(
-  error: unknown,
-  statusCode?: number,
-): WebtriggerResponse;
-```
-
-#### Web-trigger invariants
-
-- **Every response header value is a `string[]`.** A scalar `string` must be rejected by TypeScript at the `defineWebtrigger` call site.
-- `statusCode` and `statusText` are required.
-- `body` is optional to support 204 responses.
-- `buildSuccessResponse()` defaults to:
-  - body: `JSON.stringify({ message: "OK" })`
-  - headers: `{ "Content-Type": ["application/json"] }`
-  - status: `200`, `"OK"`
-- `buildErrorResponse()` must call `toProblemDetails(error, statusCode ?? 500)`. If the input already is a `ProblemDetails`, it must be retained rather than wrapped again.
-- To preserve the current compatibility behavior, error responses use `{ "Content-Type": ["application/json"] }` in this extraction. Changing to `application/problem+json` is a deliberate behavioral/API change and requires a separate decision and migration note.
-- `extractClientHeaders()` returns only these exact, case-sensitive Forge event keys, retaining their source arrays without mutation:
-  - `user-agent`
-  - `atl-traceid`
-  - `atl-edge-true-client-ip`
-  - `atl-edge-ip-tags`
-
-`defineWebtrigger()` is an identity adapter at runtime. Its purpose is contextual typing: a normal, unannotated exported handler must still have its inferred returned response checked against `WebtriggerResponse`.
-
-## Test seams and TDD rules
-
-The agent must use red-green-refactor cycles. Do not copy source files first and backfill tests later.
-
-### Confirmed public seams
-
-Tests may cross only these public seams:
-
-1. imports from the documented package root and subpaths;
-2. `withInvocationLogging()`;
-3. trigger-family event and handler types, tested with TypeScript compiler assertions where appropriate;
-4. `defineWebtrigger()`;
-5. `extractClientHeaders()`;
-6. `buildSuccessResponse()`;
-7. `buildErrorResponse()`.
-
-Do not test internal module layout, helper call order, package-private functions, or tsdown configuration implementation details.
-
-### Required vertical TDD slices
-
-Implement and validate these slices in order. For each slice: write one failing test, run the narrow test/typecheck, implement the minimum code, rerun the same check, then refactor only when green.
-
-1. **Core type availability**
-   - Verify root exports compile for a minimal `CommonEvent`, `InstallContext`, and `TriggerHandler`.
-   - Verify handlers receive correctly typed event/context parameters.
-
-2. **Lifecycle discriminating use**
-   - Verify `LifecycleEvent` can be narrowed using `"installerAccountId" in event` and accesses the correct account identifier.
-   - Verify an installation-shaped event and upgrade-shaped event both satisfy the public contract.
-
-3. **Scheduled and product contracts**
-   - Verify their handlers accept the shared event/context shape and resolve `void`.
-   - Do not test placeholder handlers because none should be exported.
-
-4. **Logging wrapper—synchronous result**
-   - With a fake `InvocationLogger`, verify one invocation log is emitted before a synchronous handler runs.
-   - Verify the wrapper returns the original result.
-
-5. **Logging wrapper—async and failure behavior**
-   - Verify an async handler resolves to its original value.
-   - Verify a thrown error and a rejected promise propagate unchanged; the wrapper must not swallow or convert them.
-   - Verify logging is still exactly once per invocation.
-
-6. **Web-trigger success response**
-   - Verify defaults and custom body/status/statusText.
-   - Verify JSON serialization uses known expected literals, not values recomputed by the test.
-
-7. **Web-trigger error response**
-   - Pass a `ProblemDetails` created through `StandardError` and verify the response body/status/statusText preserve it.
-   - Pass a normal `Error` and verify `toProblemDetails` creates the default 500 response.
-   - Pass a normal `Error` with an explicit status and verify that status is used.
-
-8. **Client-header extraction**
-   - Verify all four allowed headers are retained with arrays intact.
-   - Verify infrastructure/unlisted headers are excluded.
-   - Verify an event with no allowed headers yields `{}`.
-
-9. **The scalar-header regression (compiler seam)**
-   - Add a typecheck fixture using `defineWebtrigger()` with no explicit handler return annotation.
-   - Place `@ts-expect-error` directly on the invalid declaration and return:
-
-     ```ts
-     // @ts-expect-error Forge webtrigger response header values are string arrays.
-     defineWebtrigger(() => ({
-       headers: { "Content-Type": "application/json" },
-       statusCode: 200,
-       statusText: "OK",
-     }));
-     ```
-
-   - A valid equivalent using `["application/json"]` must typecheck.
-   - The compiler must fail if the expected error disappears, so do not use a comment-only or runtime-only test for this requirement.
-
-10. **Public export integration**
-    - Import each documented subpath exactly as a consumer would.
-    - Build the package and typecheck a small consumer fixture against built/public export configuration when practical.
-
-### Test-quality requirements
-
-- Tests must be deterministic, network-free, time-free, and order-independent.
-- Use minimal event fixtures: include only fields needed for the scenario.
-- Tests must assert externally meaningful behavior, not duplicate internal algorithms.
-- The compiler regression fixture is required because runtime tests cannot demonstrate TypeScript’s contextual checking.
-- Keep fixtures local to the package; do not import `forge-ahead` types into the new package tests.
-
-## Implementation plan
-
-1. Scaffold `packages/triggers` to match the extracted package conventions:
-   - ESM, tsdown, Vitest, Biome, strict TypeScript, Apache-2.0 metadata.
-   - Node engine and tool versions consistent with the extracted packages and root policy.
-2. Add exports and build entries for every documented subpath.
-3. Complete the TDD slices above before considering any work outside `packages/triggers`.
-4. Run package-local test, typecheck, lint, formatting, and build checks.
-5. Do not modify `packages/forge-ahead`, `packages/forge-bootstrap`, or application consumers as part of this specification. Their owners may independently choose whether and how to adopt the new package.
-
-## Acceptance criteria
-
-The work is complete only when all of the following are true:
-
-- [ ] `packages/triggers` exists and is published/configured as `@forge-ahead/triggers`.
-- [ ] It exposes the documented root and subpath interfaces through package exports.
-- [ ] `@forge-ahead/errors` is used for web-trigger error normalization through `toProblemDetails`.
-- [ ] `@forge-ahead/logging` is used through the opt-in invocation logging contract; there is no implicit logger creation or direct body/header logging.
-- [ ] A scalar web-trigger response header is rejected by TypeScript when the handler is declared through `defineWebtrigger`, even without an explicit return type.
-- [ ] Array-valued headers remain accepted.
-- [ ] Existing behavior of success responses, error responses, and client-header extraction is preserved unless a change is documented and separately approved.
-- [ ] This work does not require changes to `forge-ahead`, `forge-bootstrap`, or any application consumer.
-- [ ] No package depends on `forge-ahead` from the new triggers package.
-- [ ] No generic HTTP abstraction is introduced.
-- [ ] The new test suite is public-seam-focused, deterministic, and includes the required compiler fixture.
-- [ ] Focused package checks pass, followed by the appropriate workspace-level validation.
-
-## Validation commands
-
-Use the repository’s npm workspace conventions and its approved runtime/tooling policy. Run focused package checks first, then an appropriate workspace-level check after the new package is green.
-
-At minimum, validate:
-
-```text
-triggers: test
-triggers: typecheck
-triggers: lint:check
-triggers: format:check
-triggers: build
-workspace: relevant aggregate check
-```
-
-Report commands actually run and distinguish any unrelated pre-existing failures from regressions introduced by the extraction.
-
-## Non-goals for the coding agent
-
-Do not:
-
-- perform a blind copy/paste of trigger files;
-- add speculative trigger middleware;
-- add a runtime dependency merely because an interface can be type-only;
-- widen web-trigger headers to `string | string[]` for convenience;
-- use `any` or an unchecked type assertion to bypass the scalar-header regression;
-- make `defineWebtrigger` return a different handler or alter invocation behavior;
-- silently change the specified error media type;
-- modify `forge-ahead`, `forge-bootstrap`, or application consumers to force adoption.
-
-## Deliverables
-
-1. `packages/triggers` implementation, tests, package metadata, exports, and README.
-2. A short implementation summary describing:
-   - each TDD slice completed;
-   - public exports added;
-   - use of errors and logging;
-   - validation run;
-   - intentionally excluded adoption or migration work.
+The package is not a generic HTTP framework, a trigger router, an event-dispatch framework, or a logging implementation.
+
+## User Stories
+
+1. As a Forge application author, I want a common trigger-handler type so that trigger functions receive consistent event and invocation-context parameters.
+2. As a Forge application author, I want dedicated lifecycle contracts so that installation and upgrade events can be handled and narrowed safely.
+3. As a Forge application author, I want explicit product and scheduled trigger handler contracts so that I can describe those functions without importing unrelated web-trigger behavior.
+4. As a web-trigger author, I want handlers declared through `defineWebTrigger` to reject scalar response headers at compile time so that I catch the Forge header-shape error before deployment.
+5. As a web-trigger author, I want the complete documented request-path information, including `userPath`, so that a handler can make path-based domain decisions without parsing Forge’s trigger prefix.
+6. As a web-trigger author, I want a JSON success-response helper so that ordinary domain results are serialized with Forge-compatible array-valued headers.
+7. As a web-trigger author, I want a dedicated empty-success helper so that I can return a correct `204 No Content` response without accidentally including a body.
+8. As a web-trigger author, I want Problem Details errors translated into Forge responses so that my domain error representation reaches callers consistently.
+9. As a privacy-conscious application author, I want client-header extraction to use a fixed allowlist so that infrastructure and unapproved request headers are not propagated by default.
+10. As an application author, I want header matching to follow HTTP’s case-insensitive semantics so that allowed headers are not missed due to casing differences.
+11. As an application author, I want extracted header values copied into a fresh result so that downstream code cannot mutate the inbound Forge event.
+12. As an application author, I want to use the standard Forge logging package when appropriate without being forced to use its logger implementation.
+13. As an application author with another logging system, I want to supply a structurally compatible logger or adapter so that this package does not own logging transport, configuration, or policy.
+14. As a package consumer, I want imports to work from the documented root and subpaths so that generated declarations and export wiring are reliable.
+15. As a package maintainer, I want tests to exercise public seams and the built package so that refactors do not accidentally weaken consumer safety.
+
+## Implementation Decisions
+
+### Package and distribution
+
+- This repository root is the package. Do not introduce a `packages/` directory or npm workspace layer.
+- The package remains private for its first release. “Published” means packaged and consumable through the approved private distribution channel; it does not imply public npm publication.
+- Public imports are limited to the package root plus `/lifecycle`, `/product`, `/scheduled`, and `/webtrigger` subpaths.
+- Do not add public imports for internal modules.
+- The package is a new library. Do not add legacy aliases, compatibility shims, or migration behavior merely to mirror older code.
+- Remove all references to `forge-bootstrap`; it is not a design authority or source of behavior for this package.
+
+### Shared invocation contracts
+
+- Export JSON primitives and shared event contracts from the root entry point.
+- Trigger handlers accept an event and a minimal `InvocationContext`.
+- `InvocationContext` contains `installContext` and may expose `principal` and `workspaceId`. It intentionally does not model the richer output of Forge’s separate app-context runtime API.
+- `TriggerHandler` is common vocabulary only. Each trigger family selects its own result type; do not reintroduce a broad cross-family response union.
+
+### Trigger-family contracts
+
+- Lifecycle contracts expose installation and upgrade event shapes, including their distinct installer and upgrader account identifiers. Omit sample runtime handlers.
+- Product and scheduled contracts stay intentionally small until a demonstrated family-specific requirement exists.
+- No trigger registration, manifest wiring, retry policy, idempotency framework, authorization framework, or event-filtering framework belongs in this package.
+
+### Invocation observation and sans-I/O boundary
+
+- The root entry point exports `withInvocationLogging` and a minimal structural `InvocationLogger` capability with only `forgeInvocation(event, message?, options?)`.
+- The wrapper calls the supplied capability exactly once before the wrapped handler executes, forwards the original event and context unchanged, and preserves synchronous values, thrown errors, promises, and rejected promises unchanged.
+- The package must not create a logger, inspect environment configuration, configure a logging transport, log request bodies or headers itself, catch or translate handler errors, or own error policy.
+- `@forge-ahead/logging` is a type-only integration. Its standard logger must be structurally compatible, while callers remain free to pass another compatible logger or adapter.
+
+### Web-trigger contracts and naming
+
+- Use `WebTrigger` casing for public TypeScript symbols: `WebTriggerEvent`, `WebTriggerResponse`, `WebTriggerHandler`, and `defineWebTrigger`.
+- Keep the package import subpath as `/webtrigger`.
+- `WebTriggerEvent` includes method, headers, query parameters, optional body, full path, required `userPath`, and optional invoked-function metadata.
+- Web-trigger response headers and request/query header maps use `Record<string, string[]>`. A scalar header value is invalid.
+- `defineWebTrigger` is a runtime identity adapter whose purpose is contextual TypeScript checking of unannotated handlers.
+
+### Web-trigger response builders
+
+- `buildSuccessResponse` accepts an optional `JSONValue`. With no value, it serializes the default `{ "message": "OK" }`; with a supplied value, it serializes that exact JSON value. It produces an `application/json` response with array-valued headers.
+- `buildEmptySuccessResponse` is a dedicated, zero-argument helper that produces exactly `204 No Content`, no body, and no content-type header.
+- `buildSuccessResponse` is for JSON-bearing successes. Callers construct `WebTriggerResponse` directly for unusual empty or non-JSON success responses.
+- `buildErrorResponse` normalizes unknown errors with `toProblemDetails` from `@forge-ahead/errors` and returns an `application/problem+json` response.
+- Error-status precedence is: an explicitly supplied status wins; otherwise preserve a valid input `ProblemDetails.status`; otherwise use `500`.
+- Error `statusText` uses a non-empty Problem Details title when available and otherwise uses a deterministic fallback for the resolved status.
+- Response builders do not validate arbitrary status codes or generate generic HTTP reason phrases. This package is not a generic HTTP abstraction.
+
+### Client-header extraction
+
+- `extractClientHeaders` has a fixed allowlist: `user-agent`, `atl-traceid`, `atl-edge-true-client-ip`, and `atl-edge-ip-tags`.
+- Compare incoming header names case-insensitively and emit canonical lowercase keys.
+- Return a fresh headers object and fresh string arrays.
+- If input contains casing variants of the same allowed header, merge their values in encounter order under the canonical key.
+- Do not expose unlisted headers or mutate the inbound event.
+
+### Dependencies and package artifacts
+
+- `@forge/api` supplies Forge method typing.
+- `@forge-ahead/errors` is a runtime dependency for Problem Details normalization.
+- `@forge-ahead/logging` is a type-only dependency for compatibility with its invocation-log options.
+- Use type-only imports whenever no runtime value is required.
+- Do not copy upstream source or add local fallback implementations when an upstream package cannot resolve.
+- Any Git- or registry-supplied upstream dependency must expose the built artifacts declared by its package exports. Missing upstream `dist` artifacts are a prerequisite failure to resolve upstream, not a reason to weaken this package’s contracts.
+
+## Testing Decisions
+
+- Use red-green-refactor development. Implement one narrow vertical slice at a time: write a failing public-seam test or compiler fixture, run the narrow check, implement the minimum behavior, rerun, then refactor only when green.
+- Tests cross only documented public imports and public functions. Do not test internal module layout, private helper calls, or bundler implementation details.
+- Tests are deterministic, network-free, time-free, order-independent, and use minimal event fixtures.
+- Type-level tests verify shared contracts, lifecycle narrowing, product and scheduled handlers, and the scalar-header regression.
+- Runtime tests cover synchronous and asynchronous invocation observation, unchanged error propagation, success and empty-success responses, error conversion/status precedence, and client-header extraction.
+- The scalar-header regression is mandatory and uses `@ts-expect-error` directly on an unannotated `defineWebTrigger` handler that returns a scalar header value. A valid array-valued equivalent must also typecheck.
+- Built-consumer typechecking is mandatory. After building, a consumer fixture imports only the documented package root and subpaths, including `/webtrigger`, to verify declarations and export-map wiring as consumers receive them.
+- Validate focused test, typecheck, lint, format, build, and built-consumer checks before the appropriate aggregate repository check. Report commands actually run and distinguish pre-existing failures from regressions.
+
+## Out of Scope
+
+- Generic HTTP request/response abstractions.
+- Forge manifest changes, deployment behavior, trigger registrations, or consumer migrations.
+- Compatibility aliases for prior packages or applications.
+- Runtime logging configuration, logger creation, Pino-specific APIs, or logging transports.
+- Retry, idempotency, event dispatch, authorization, product-event filtering, or routing frameworks.
+- Replacing Forge SDK types wholesale.
+- Copying placeholder application handlers into the package.
+- Working around unresolved upstream package artifacts with copied code, `any`, unsafe assertions, or local substitute contracts.
+
+## Further Notes
+
+- The primary safety goal is to make the Forge array-valued response-header rule difficult to misuse at the handler declaration site.
+- The package follows a sans-I/O design: response construction and header extraction are pure value transformations; logging remains an optional side effect at the invocation boundary and is owned by the caller.
+- Upstream Git-package artifact investigation is deliberately deferred. Implementation may proceed only once declared upstream exports are consumable in the installed dependency tree.
+- Deliver implementation, tests, package metadata/exports, README updates, and a short summary of completed TDD slices, validations, and intentionally excluded adoption work.

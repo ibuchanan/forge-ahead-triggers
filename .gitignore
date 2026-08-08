@@ -27,5 +27,4 @@ yarn-error.log*
 .env.*
 !.env.example
 .turbo
-bun.lock
-.cocoindex_code/
+/.cocoindex_code/
