@@ -4,9 +4,8 @@
 
 Typed Forge trigger contracts and focused web-trigger response utilities.
 
-> **Status: scaffolded, not implemented.** This is a private package under
-> test-driven development. It must not be consumed until its public contracts,
-> built artifacts, and validation suite are complete.
+> **Status: private package.** Public contracts, built artifacts, and the
+> consumer-validation suite are maintained as part of this package.
 
 ## Why this package exists
 
@@ -62,20 +61,21 @@ may supply their own compatible logger or adapter.
 
 ## Development
 
-Use Node 22 or newer with npm:
+Use Bun with a Node.js 22-compatible runtime:
 
 ```sh
-npm install
-npm run build
-npm run typecheck
-npm run lint:check
-npm run format:check
-npm run test
+bun install
+bun run build
+bun run typecheck
+bun run lint:check
+bun run format:check
+bun run test
+bun run test:consumer
 ```
 
-The finished package will also require a built-consumer typecheck that imports
-only its documented exports. This verifies the generated declarations and
-export map, including the scalar-header regression fixture.
+The package also requires a built-consumer typecheck that imports only its
+documented exports. This verifies the generated declarations and export map,
+including the scalar-header regression fixture.
 
 ### Implementation prerequisite
 

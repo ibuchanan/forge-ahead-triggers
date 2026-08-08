@@ -75,9 +75,9 @@
     "lint:fix": "biome lint --write",
     "prepare": "npm run build && (lefthook install || true)",
     "release:prepare": "scripts/release-prepare.sh",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:consumer": "tsc -p test/consumer/tsconfig.json",
-    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest watch",
     "typecheck": "tsc --noEmit"
   },
