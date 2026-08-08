@@ -38,6 +38,31 @@ export const defineWebTrigger = (
   handler: WebTriggerHandler,
 ): WebTriggerHandler => handler;
 
+const CLIENT_HEADER_NAMES = new Set([
+  "user-agent",
+  "atl-traceid",
+  "atl-edge-true-client-ip",
+  "atl-edge-ip-tags",
+]);
+
+/** Return the approved client headers using canonical lowercase names. */
+export const extractClientHeaders = (
+  headers: Record<string, string[]>,
+): Record<string, string[]> => {
+  const clientHeaders: Record<string, string[]> = {};
+
+  for (const [name, values] of Object.entries(headers)) {
+    const canonicalName = name.toLowerCase();
+
+    if (CLIENT_HEADER_NAMES.has(canonicalName)) {
+      clientHeaders[canonicalName] ??= [];
+      clientHeaders[canonicalName].push(...values);
+    }
+  }
+
+  return clientHeaders;
+};
+
 /** Build a JSON-bearing `200 OK` Forge web-trigger response. */
 export const buildSuccessResponse = (
   value: JSONValue = { message: "OK" },
