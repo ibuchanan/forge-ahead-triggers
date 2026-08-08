@@ -1,9 +1,13 @@
-import type {
-  InvocationContext,
-  JSONPrimitive,
-  JSONValue,
-  TriggerEvent,
-  TriggerHandler,
+import type { ForgeLogger } from "@forge-ahead/logging";
+
+import {
+  withInvocationLogging,
+  type InvocationContext,
+  type InvocationLogger,
+  type JSONPrimitive,
+  type JSONValue,
+  type TriggerEvent,
+  type TriggerHandler,
 } from "@forge-ahead/triggers";
 
 const primitive: JSONPrimitive = "trigger";
@@ -27,4 +31,10 @@ const handler: TriggerHandler<typeof event, JSONValue> = (
   installContext: receivedContext.installContext,
 });
 
+declare const forgeLogger: ForgeLogger;
+
+const invocationLogger: InvocationLogger = forgeLogger;
+const loggedHandler = withInvocationLogging(invocationLogger, handler);
+
 void handler(event, context);
+void loggedHandler(event, context);

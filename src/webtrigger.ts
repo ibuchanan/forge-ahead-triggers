@@ -1,7 +1,7 @@
 /** Forge web-trigger contracts. */
 import type {
-  WebTriggerMethod,
   WebTriggerResponse as ForgeWebTriggerResponse,
+  WebTriggerMethod,
 } from "@forge/api";
 
 import type { JSONValue, TriggerHandler } from "./core.js";
