@@ -1,0 +1,4 @@
+/**
+ * Product trigger contracts.
+ */
+export {};

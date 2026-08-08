@@ -1,0 +1,4 @@
+/**
+ * Scheduled trigger contracts.
+ */
+export {};

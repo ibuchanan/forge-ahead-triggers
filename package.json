@@ -1,0 +1,94 @@
+{
+  "name": "@forge-ahead/triggers",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TypeScript contracts and utilities for Atlassian Forge triggers.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./lifecycle": {
+      "import": {
+        "types": "./dist/lifecycle.d.mts",
+        "default": "./dist/lifecycle.mjs"
+      },
+      "require": {
+        "types": "./dist/lifecycle.d.cts",
+        "default": "./dist/lifecycle.cjs"
+      }
+    },
+    "./product": {
+      "import": {
+        "types": "./dist/product.d.mts",
+        "default": "./dist/product.mjs"
+      },
+      "require": {
+        "types": "./dist/product.d.cts",
+        "default": "./dist/product.cjs"
+      }
+    },
+    "./scheduled": {
+      "import": {
+        "types": "./dist/scheduled.d.mts",
+        "default": "./dist/scheduled.mjs"
+      },
+      "require": {
+        "types": "./dist/scheduled.d.cts",
+        "default": "./dist/scheduled.cjs"
+      }
+    },
+    "./webtrigger": {
+      "import": {
+        "types": "./dist/webtrigger.d.mts",
+        "default": "./dist/webtrigger.mjs"
+      },
+      "require": {
+        "types": "./dist/webtrigger.d.cts",
+        "default": "./dist/webtrigger.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "changelog": "touch CHANGELOG.md && git cliff --offline --unreleased --prepend CHANGELOG.md",
+    "check": "npm run lint:check && npm run format:check && npm run typecheck && npm run test",
+    "clean": "rm -rf ./node_modules ./dist",
+    "dev": "tsdown --watch",
+    "format": "biome format --write",
+    "format:check": "biome format",
+    "lint": "lefthook run lint",
+    "lint:check": "biome lint",
+    "lint:fix": "biome lint --write",
+    "prepare": "npm run build && (lefthook install || true)",
+    "release:prepare": "scripts/release-prepare.sh",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.4",
+    "@types/node": "22",
+    "lefthook": "^2.1",
+    "tsdown": "^0.22",
+    "typescript": "^5.9",
+    "vitest": "^4.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

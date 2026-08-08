@@ -1,0 +1,4 @@
+/**
+ * Lifecycle trigger contracts.
+ */
+export {};
