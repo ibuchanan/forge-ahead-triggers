@@ -3,6 +3,7 @@ import type {
   WebTriggerResponse as ForgeWebTriggerResponse,
   WebTriggerMethod,
 } from "@forge/api";
+import { toProblemDetails } from "@forge-ahead/errors";
 
 import type { JSONValue, TriggerHandler } from "./core.js";
 
@@ -78,3 +79,25 @@ export const buildEmptySuccessResponse = (): WebTriggerResponse => ({
   statusCode: 204,
   statusText: "No Content",
 });
+
+/** Build a Problem Details Forge web-trigger response from an unknown error. */
+export const buildErrorResponse = (
+  error: unknown,
+  status?: number,
+): WebTriggerResponse => {
+  const problem = toProblemDetails(error);
+  const statusCode =
+    status ??
+    (Number.isInteger(problem.status) &&
+    problem.status >= 100 &&
+    problem.status <= 599
+      ? problem.status
+      : 500);
+
+  return {
+    body: JSON.stringify({ ...problem, status: statusCode }),
+    headers: { "content-type": ["application/problem+json"] },
+    statusCode,
+    statusText: problem.title || `Error response (${statusCode})`,
+  };
+};
