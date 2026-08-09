@@ -1,6 +1,6 @@
 {
   "name": "@forge-ahead/triggers",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "TypeScript contracts and utilities for Atlassian Forge triggers.",
   "license": "Apache-2.0",
