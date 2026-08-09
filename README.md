@@ -102,6 +102,15 @@ This repository uses Node.js 22 or later and npm. For installation, local
 checks, repository structure, and release workflow, see
 [DEVELOPMENT.md](DEVELOPMENT.md).
 
+## Documentation
+
+The documentation follows the [Diátaxis](https://diataxis.fr/) framework:
+
+- [Tutorial: return JSON from a Forge web trigger](docs/tutorial-web-trigger.md)
+- [How-to: handle Forge web-trigger responses](docs/how-to-handle-web-trigger-responses.md)
+- [API reference](docs/reference.md)
+- [Explanation: triggers as the backbone of Forge backends](docs/explanation.md)
+
 ## Further reading
 
 - [Trigger package specification](specs/forge-ahead-triggers-extraction-spec.md)
