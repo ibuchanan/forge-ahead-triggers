@@ -130,6 +130,7 @@ npm run changelog
 ```
 
 `npm run release:prepare` is a maintainer workflow. It calculates the next
-version with `git-cliff`, updates `package.json` and `CHANGELOG.md`, creates a
-release commit and tag, and pushes `main` plus that tag. Run it only when you
-intend to perform those Git writes and have the required repository access.
+version with `git-cliff`, updates `package.json`, `package-lock.json`, and
+`CHANGELOG.md`, creates a release commit and tag, and pushes `main` plus that
+tag. Run it only when you intend to perform those Git writes and have the
+required repository access.
