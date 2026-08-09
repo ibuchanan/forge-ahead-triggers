@@ -1,3 +1,10 @@
+## [0.1.1] - 2026-08-09
+
+### 🐛 Bug Fixes
+
+- *(packaging)* Support legacy TypeScript resolution
+- *(release)* Synchronize package lock version
+
 ## [0.1.0] - 2026-08-09
 
 ### 🚀 Features
