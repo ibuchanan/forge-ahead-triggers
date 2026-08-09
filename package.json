@@ -58,7 +58,23 @@
     }
   },
   "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "types": "./dist/index.d.cts",
+  "typesVersions": {
+    "*": {
+      "lifecycle": [
+        "dist/lifecycle.d.cts"
+      ],
+      "product": [
+        "dist/product.d.cts"
+      ],
+      "scheduled": [
+        "dist/scheduled.d.cts"
+      ],
+      "webtrigger": [
+        "dist/webtrigger.d.cts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
