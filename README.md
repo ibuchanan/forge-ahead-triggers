@@ -2,25 +2,56 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square)](LICENSE)
 
-Typed Forge trigger contracts and focused web-trigger response utilities.
+TypeScript contracts and small, focused utilities for Atlassian Forge lifecycle,
+product, scheduled, and web triggers.
 
-> **Status: private package.** Public contracts, built artifacts, and the
-> consumer-validation suite are maintained as part of this package.
+> **Status: private package.** The package is built and validated for ESM and
+> CommonJS consumers, but it is not published to the public npm registry.
 
-## Why this package exists
+## What it provides
 
-Forge web-trigger response headers must map each header name to an array of
-strings. A scalar value such as `"Content-Type": "application/json"` can fail
-only at runtime without a contextual TypeScript contract.
+- Minimal shared trigger contracts and invocation context at the package root.
+- Dedicated contracts for lifecycle, product, and scheduled triggers.
+- A `defineWebTrigger` adapter that contextually type-checks Forge's required
+  array-valued response headers.
+- Pure helpers for JSON successes, empty successes, Problem Details errors, and
+  allowlisted client-request headers.
+- An opt-in `withInvocationLogging` wrapper that works with a caller-owned,
+  structurally compatible logger.
 
-This package will provide small, independently importable contracts for
-lifecycle, product, scheduled, and web triggers. Its central safety goal is to
-make that scalar-header mistake fail during typechecking when a handler is
-created with `defineWebTrigger`.
+This is not a trigger router, HTTP framework, event dispatcher, retry system,
+or logging implementation.
 
-## Planned public imports
+## Usage
+
+Import only the public root or trigger-family subpaths:
 
 ```ts
+import { defineWebTrigger, buildSuccessResponse } from "@forge-ahead/triggers/webtrigger";
+
+export const handler = defineWebTrigger((event) =>
+  buildSuccessResponse({ path: event.userPath }),
+);
+```
+
+`defineWebTrigger` keeps the handler's runtime value unchanged while checking
+its return type. Forge web-trigger response headers must be string arrays:
+
+```ts
+import { defineWebTrigger } from "@forge-ahead/triggers/webtrigger";
+
+const handler = defineWebTrigger(() => ({
+  body: "ok",
+  headers: {
+    "content-type": ["text/plain"],
+  },
+  statusCode: 200,
+}));
+```
+
+The following public imports are supported:
+
+```text
 @forge-ahead/triggers
 @forge-ahead/triggers/lifecycle
 @forge-ahead/triggers/product
@@ -28,79 +59,55 @@ created with `defineWebTrigger`.
 @forge-ahead/triggers/webtrigger
 ```
 
-The root entry point will contain shared invocation contracts and the optional
-`withInvocationLogging` wrapper. Trigger-family contracts and web-trigger
-utilities will live at their dedicated subpaths.
+## Web-trigger utilities
 
-## Planned web-trigger surface
+The `/webtrigger` entry point exports `WebTriggerEvent`, `WebTriggerResponse`,
+`WebTriggerHandler`, `defineWebTrigger`, and these helpers:
 
-The web-trigger entry point will expose `WebTriggerEvent`,
-`WebTriggerResponse`, `WebTriggerHandler`, and `defineWebTrigger`, plus:
+- `buildSuccessResponse(value?)` returns a JSON `200 OK` response. Without a
+  value, its body is `{"message":"OK"}`.
+- `buildEmptySuccessResponse()` returns exactly `204 No Content`, without a
+  body or content-type header.
+- `buildErrorResponse(error, status?)` converts an unknown error to a Problem
+  Details response with `application/problem+json`; an explicit status takes
+  precedence over a valid Problem Details status.
+- `extractClientHeaders(headers)` returns fresh arrays for only these
+  case-insensitively matched headers: `user-agent`, `atl-traceid`,
+  `atl-edge-true-client-ip`, and `atl-edge-ip-tags`.
 
-- `buildSuccessResponse` for JSON-valued success responses;
-- `buildEmptySuccessResponse` for a fixed `204 No Content` response;
-- `buildErrorResponse` for Problem Details error responses; and
-- `extractClientHeaders` for a narrow, allowlisted client-header view.
+## Invocation logging
 
-Success responses will use `application/json`; Problem Details error responses
-will use `application/problem+json`. Every Forge response-header value remains
-a `string[]`.
+The root entry point exposes `withInvocationLogging` and the minimal
+`InvocationLogger` interface. The wrapper calls `logger.forgeInvocation(event)`
+exactly once before the handler and otherwise preserves the original return
+value, promise, and thrown or rejected errors.
 
-`WebTriggerEvent` will include both the full Forge request path and `userPath`,
-the caller-controlled path suffix after the trigger identifier.
+```ts
+import { withInvocationLogging, type TriggerHandler } from "@forge-ahead/triggers";
 
-## Logging boundary
+const handler: TriggerHandler<{ orderId: string }> = (event) => {
+  // Handle the invocation.
+  return { orderId: event.orderId };
+};
 
-`withInvocationLogging` will accept a caller-supplied structural logger with a
-single `forgeInvocation(...)` capability. It will not create or configure a
-logger, read environment settings, couple callers to Pino, inspect request
-bodies or headers, or alter handler errors and promises.
+const observedHandler = withInvocationLogging(logger, handler);
+```
 
-The standard `@forge-ahead/logging` logger will be compatible, but applications
-may supply their own compatible logger or adapter.
+The package does not create or configure a logger, inspect request bodies or
+headers, or own error-handling policy.
 
 ## Development
 
-Use Bun with a Node.js 22-compatible runtime:
+This repository uses Node.js 22 or later and npm. For installation, local
+checks, repository structure, and release workflow, see
+[DEVELOPMENT.md](DEVELOPMENT.md).
 
-```sh
-bun install
-bun run build
-bun run typecheck
-bun run lint:check
-bun run format:check
-bun run test
-bun run test:consumer
-```
+## Further reading
 
-The package also requires a built-consumer typecheck that imports only its
-documented exports. This verifies the generated declarations and export map,
-including the scalar-header regression fixture.
-
-### Implementation prerequisite
-
-`@forge-ahead/errors` and `@forge-ahead/logging` are private upstream
-packages. They must resolve the built artifacts declared by their package
-exports before this package can import their runtime values or types. Do not
-copy their source or add local fallbacks if those artifacts are unavailable.
-
-## Repository layout
-
-- `src/core.ts` — shared invocation contracts
-- `src/logging.ts` — opt-in invocation-observation wrapper
-- `src/lifecycle.ts` — lifecycle trigger contracts
-- `src/product.ts` — product trigger contracts
-- `src/scheduled.ts` — scheduled trigger contracts
-- `src/webtrigger.ts` — web-trigger contracts and response utilities
-- `specs/` — design decisions and acceptance criteria
-
-See the [trigger package specification](specs/forge-ahead-triggers-extraction-spec.md)
-for the complete API, testing, and package-boundary decisions.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and
-[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- [Trigger package specification](specs/forge-ahead-triggers-extraction-spec.md)
+  — API scope and design decisions.
+- [Contributing guide](CONTRIBUTING.md) — contribution expectations and CLA.
+- [Changelog](CHANGELOG.md) — release history.
 
 ## License
 
