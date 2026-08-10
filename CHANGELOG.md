@@ -1,3 +1,9 @@
+## [0.2.0] - 2026-08-10
+
+### 🚀 Features
+
+- *(webtrigger)* Add parseJsonBody and buildErrorCodeResponse utilities
+
 ## [0.1.1] - 2026-08-09
 
 ### 🐛 Bug Fixes
