@@ -3,7 +3,7 @@ import type {
   WebTriggerResponse as ForgeWebTriggerResponse,
   WebTriggerMethod,
 } from "@forge/api";
-import { toProblemDetails } from "@forge-ahead/errors";
+import { err, ok, toProblemDetails, type Result } from "@forge-ahead/errors";
 
 import type { JSONValue, TriggerHandler } from "./core.js";
 
@@ -100,4 +100,75 @@ export const buildErrorResponse = (
     statusCode,
     statusText: problem.title || `Error response (${statusCode})`,
   };
+};
+
+/** Body of a simple domain-error-code web-trigger response. */
+export interface ErrorCodeResponseBody {
+  /** Domain error code identifying the failure. */
+  readonly error: string;
+  /** Optional human-readable explanation. */
+  readonly detail?: string;
+}
+
+const DEFAULT_ERROR_HEADERS = { "content-type": ["application/json"] };
+
+/** Build a JSON web-trigger response with a simple domain error code. */
+export const buildErrorCodeResponse = (
+  statusCode: number,
+  body: ErrorCodeResponseBody,
+  headers: Record<string, string[]> = DEFAULT_ERROR_HEADERS,
+): WebTriggerResponse => ({
+  body: JSON.stringify(body),
+  headers,
+  statusCode,
+});
+
+/** Options for {@link parseJsonBody}. */
+export interface ParseJsonBodyOptions {
+  /** Status code for validation failure responses (default: 400). */
+  statusCode?: number;
+  /** Domain error code for validation failure responses (default: "invalid-request-body"). */
+  errorCode?: string;
+  /** Headers for validation failure responses (default: `{ "content-type": ["application/json"] }`). */
+  headers?: Record<string, string[]>;
+}
+
+const DEFAULT_ERROR_CODE = "invalid-request-body";
+
+const buildValidationErrorResponse = (
+  options: ParseJsonBodyOptions,
+): WebTriggerResponse =>
+  buildErrorCodeResponse(
+    options.statusCode ?? 400,
+    { error: options.errorCode ?? DEFAULT_ERROR_CODE },
+    options.headers,
+  );
+
+/**
+ * Parse a web-trigger JSON body and validate it with a caller-supplied type guard.
+ *
+ * Returns the parsed value on success, or a ready-to-return web-trigger error
+ * response when the body is missing, malformed, or rejected by the guard.
+ */
+export const parseJsonBody = <T>(
+  request: WebTriggerEvent,
+  guard: (value: unknown) => value is T,
+  options: ParseJsonBodyOptions = {},
+): Result<T, WebTriggerResponse> => {
+  if (!request.body) {
+    return err(buildValidationErrorResponse(options));
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(request.body);
+  } catch {
+    return err(buildValidationErrorResponse(options));
+  }
+
+  if (!guard(parsed)) {
+    return err(buildValidationErrorResponse(options));
+  }
+
+  return ok(parsed);
 };
