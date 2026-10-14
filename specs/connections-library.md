@@ -182,7 +182,7 @@ enforce current authorization.
 
 ## 8. Reference-derived requirements
 
-The existing example at `vendor/explore-forge-config-lifecycle` demonstrates:
+The [explore-forge-config-lifecycle example](https://github.com/ibuchanan/explore-forge-config-lifecycle) demonstrates:
 
 - `src/resolvers/config.ts`: URL/secret separation, safe `hasToken` reads,
   save/reset, and a single configured flag.

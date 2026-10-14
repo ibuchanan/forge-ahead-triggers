@@ -1,9 +1,0 @@
-[submodule "vendor/explore-forge-jira-custom-api"]
-	path = vendor/explore-forge-jira-custom-api
-	url = https://github.com/ibuchanan/explore-forge-jira-custom-api
-[submodule "vendor/wonder-supplychain-graph"]
-	path = vendor/wonder-supplychain-graph
-	url = https://github.com/ibuchanan/wonder-supplychain-graph.git
-[submodule "vendor/explore-forge-config-lifecycle"]
-	path = vendor/explore-forge-config-lifecycle
-	url = https://github.com/ibuchanan/explore-forge-config-lifecycle.git

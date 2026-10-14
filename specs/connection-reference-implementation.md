@@ -7,8 +7,9 @@ Dependencies: [connections](connections-library.md), [receiver](webtrigger-auth.
 
 ## 1. Purpose and starting point
 
-Evolve the ideas in `vendor/explore-forge-config-lifecycle` into an executable
-reference for administering purpose-specific connections. Preserve its useful
+Evolve the ideas in
+[explore-forge-config-lifecycle](https://github.com/ibuchanan/explore-forge-config-lifecycle)
+into an executable reference for administering purpose-specific connections. Preserve its useful
 Configure, Get Started, persistent admin, and product-feature surfaces while
 replacing the app-wide `isConfigured` model.
 
