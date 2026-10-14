@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -9,5 +9,6 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
     },
     include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)"],
+    exclude: [...configDefaults.exclude, "**/vendor/**"],
   },
 });
