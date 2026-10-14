@@ -54,6 +54,20 @@ describe("buildErrorResponse", () => {
     });
   });
 
+  it("falls back to 500 when domain Problem Details omits status", () => {
+    const statuslessProblem = {
+      detail: "The order has already shipped.",
+      title: "Order conflict",
+    };
+
+    expect(buildErrorResponse(statuslessProblem)).toEqual({
+      body: JSON.stringify({ ...statuslessProblem, status: 500 }),
+      headers: { "content-type": ["application/problem+json"] },
+      statusCode: 500,
+      statusText: "Order conflict",
+    });
+  });
+
   it("uses a deterministic status-specific title when Problem Details has no title", () => {
     const untitledProblem = {
       detail: "Validation failed.",

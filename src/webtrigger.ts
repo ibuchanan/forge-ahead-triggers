@@ -86,12 +86,14 @@ export const buildErrorResponse = (
   status?: number,
 ): WebTriggerResponse => {
   const problem = toProblemDetails(error);
+  const problemStatus = problem.status;
   const statusCode =
     status ??
-    (Number.isInteger(problem.status) &&
-    problem.status >= 100 &&
-    problem.status <= 599
-      ? problem.status
+    (typeof problemStatus === "number" &&
+    Number.isInteger(problemStatus) &&
+    problemStatus >= 100 &&
+    problemStatus <= 599
+      ? problemStatus
       : 500);
 
   return {
