@@ -1,3 +1,17 @@
+## [0.2.1] - 2026-10-14
+
+### 🐛 Bug Fixes
+
+- *(webtrigger)* Handle missing problem status
+
+### 📚 Documentation
+
+- *(connections)* Add connection ecosystem specifications
+
+### ⚙️ Miscellaneous Tasks
+
+- *(check)* Exclude vendor from project checks
+
 ## [0.2.0] - 2026-08-10
 
 ### 🚀 Features
