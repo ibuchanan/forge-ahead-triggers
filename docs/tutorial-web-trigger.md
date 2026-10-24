@@ -77,7 +77,7 @@ curl "https://your-web-trigger-url/orders/42"
 The response body is JSON equivalent to:
 
 ```json
-{"userPath":"/orders/42"}
+{ "userPath": "/orders/42" }
 ```
 
 You have now returned a typed, Forge-compatible JSON response. The complete

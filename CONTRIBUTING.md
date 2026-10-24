@@ -2,7 +2,6 @@
 
 Thank you for considering a contribution to @forge-ahead/triggers! Pull
 requests, issues, and comments are welcome. For pull requests, please:
-
 - Add public-seam tests for new features and bug fixes.
 - Follow the existing style and package boundaries.
 - Keep unrelated changes in separate pull requests.
@@ -18,6 +17,5 @@ code/documentation/translation and is willing to have it used in distributions
 and derivative works (or to transfer ownership).
 
 Before contributions can be accepted, please sign the appropriate CLA:
-
 - [CLA for corporate contributors](https://opensource.atlassian.com/corporate)
 - [CLA for individuals](https://opensource.atlassian.com/individual)

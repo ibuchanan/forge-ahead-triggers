@@ -27,11 +27,11 @@ values.
 
 ### `InvocationContext`
 
-| Property | Type | Required |
-| --- | --- | --- |
-| `installContext` | `string` | Yes |
-| `principal` | `string` | No |
-| `workspaceId` | `string` | No |
+| Property         | Type     | Required |
+| ---------------- | -------- | -------- |
+| `installContext` | `string` | Yes      |
+| `principal`      | `string` | No       |
+| `workspaceId`    | `string` | No       |
 
 ### `TriggerHandler<Event, Result>`
 
@@ -62,36 +62,36 @@ Import from `@forge-ahead/triggers/lifecycle`.
 
 ### `LifecycleApp`
 
-| Property | Type |
-| --- | --- |
-| `id` | `string` |
-| `name` | `string` |
+| Property         | Type     |
+| ---------------- | -------- |
+| `id`             | `string` |
+| `name`           | `string` |
 | `ownerAccountId` | `string` |
-| `version` | `string` |
+| `version`        | `string` |
 
 ### `LifecycleEnvironment`
 
-| Property | Type |
-| --- | --- |
-| `id` | `string` |
+| Property | Type     |
+| -------- | -------- |
+| `id`     | `string` |
 
 ### `InstallationEvent`
 
-| Property | Type | Required |
-| --- | --- | --- |
-| `app` | `LifecycleApp` | Yes |
-| `environment` | `LifecycleEnvironment` | No |
-| `id` | `string` | Yes |
-| `installerAccountId` | `string` | No |
+| Property             | Type                   | Required |
+| -------------------- | ---------------------- | -------- |
+| `app`                | `LifecycleApp`         | Yes      |
+| `environment`        | `LifecycleEnvironment` | No       |
+| `id`                 | `string`               | Yes      |
+| `installerAccountId` | `string`               | No       |
 
 ### `UpgradeEvent`
 
-| Property | Type | Required |
-| --- | --- | --- |
-| `app` | `LifecycleApp` | Yes |
-| `environment` | `LifecycleEnvironment` | No |
-| `id` | `string` | Yes |
-| `upgraderAccountId` | `string` | No |
+| Property            | Type                   | Required |
+| ------------------- | ---------------------- | -------- |
+| `app`               | `LifecycleApp`         | Yes      |
+| `environment`       | `LifecycleEnvironment` | No       |
+| `id`                | `string`               | Yes      |
+| `upgraderAccountId` | `string`               | No       |
 
 ### `LifecycleEvent`
 
@@ -114,7 +114,6 @@ Forge groups product, lifecycle, scheduled, and web-trigger inputs in its
 ### `@forge-ahead/triggers/scheduled`
 
 Forge documents the corresponding platform module in its [scheduled trigger reference][forge-scheduled-triggers].
-
 - `ScheduledEvent` is an alias of `TriggerEvent`.
 - `ScheduledHandler` is an alias of `TriggerHandler<ScheduledEvent>`.
 
@@ -127,14 +126,14 @@ Import from `@forge-ahead/triggers/webtrigger`.
 
 ### `WebTriggerEvent`
 
-| Property | Type | Required | Meaning |
-| --- | --- | --- | --- |
-| `body` | `string` | No | Request body. |
-| `headers` | `Record<string, string[]>` | Yes | Request headers. |
-| `method` | `WebTriggerMethod` | Yes | HTTP method from `@forge/api`. |
-| `path` | `string` | Yes | Full Forge request path. |
-| `queryParameters` | `Record<string, string[]>` | Yes | Parsed query values. |
-| `userPath` | `string` | Yes | Path suffix after the trigger ID. |
+| Property          | Type                       | Required | Meaning                           |
+| ----------------- | -------------------------- | -------- | --------------------------------- |
+| `body`            | `string`                   | No       | Request body.                     |
+| `headers`         | `Record<string, string[]>` | Yes      | Request headers.                  |
+| `method`          | `WebTriggerMethod`         | Yes      | HTTP method from `@forge/api`.    |
+| `path`            | `string`                   | Yes      | Full Forge request path.          |
+| `queryParameters` | `Record<string, string[]>` | Yes      | Parsed query values.              |
+| `userPath`        | `string`                   | Yes      | Path suffix after the trigger ID. |
 
 ### `WebTriggerResponse`
 

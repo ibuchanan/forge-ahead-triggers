@@ -27,7 +27,10 @@ or logging implementation.
 Import only the public root or trigger-family subpaths:
 
 ```ts
-import { defineWebTrigger, buildSuccessResponse } from "@forge-ahead/triggers/webtrigger";
+import {
+  defineWebTrigger,
+  buildSuccessResponse,
+} from "@forge-ahead/triggers/webtrigger";
 
 export const handler = defineWebTrigger((event) =>
   buildSuccessResponse({ path: event.userPath }),
@@ -63,7 +66,6 @@ The following public imports are supported:
 
 The `/webtrigger` entry point exports `WebTriggerEvent`, `WebTriggerResponse`,
 `WebTriggerHandler`, `defineWebTrigger`, and these helpers:
-
 - `buildSuccessResponse(value?)` returns a JSON `200 OK` response. Without a
   value, its body is `{"message":"OK"}`.
 - `buildEmptySuccessResponse()` returns exactly `204 No Content`, without a
@@ -83,7 +85,10 @@ exactly once before the handler and otherwise preserves the original return
 value, promise, and thrown or rejected errors.
 
 ```ts
-import { withInvocationLogging, type TriggerHandler } from "@forge-ahead/triggers";
+import {
+  withInvocationLogging,
+  type TriggerHandler,
+} from "@forge-ahead/triggers";
 
 const handler: TriggerHandler<{ orderId: string }> = (event) => {
   // Handle the invocation.
@@ -105,7 +110,6 @@ checks, repository structure, and release workflow, see
 ## Documentation
 
 The documentation follows the [Diátaxis](https://diataxis.fr/) framework:
-
 - [Tutorial: return JSON from a Forge web trigger](docs/tutorial-web-trigger.md)
 - [How-to: handle Forge web-trigger responses](docs/how-to-handle-web-trigger-responses.md)
 - [API reference](docs/reference.md)

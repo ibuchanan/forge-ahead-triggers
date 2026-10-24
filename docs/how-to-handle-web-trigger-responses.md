@@ -37,9 +37,7 @@ import {
   defineWebTrigger,
 } from "@forge-ahead/triggers/webtrigger";
 
-export const removeOrder = defineWebTrigger(() =>
-  buildEmptySuccessResponse(),
-);
+export const removeOrder = defineWebTrigger(() => buildEmptySuccessResponse());
 ```
 
 ## Convert failures to Problem Details

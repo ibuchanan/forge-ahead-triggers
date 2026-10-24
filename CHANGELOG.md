@@ -2,28 +2,28 @@
 
 ### 🐛 Bug Fixes
 
-- *(webtrigger)* Handle missing problem status
+- _(webtrigger)_ Handle missing problem status
 
 ### 📚 Documentation
 
-- *(connections)* Add connection ecosystem specifications
+- _(connections)_ Add connection ecosystem specifications
 
 ### ⚙️ Miscellaneous Tasks
 
-- *(check)* Exclude vendor from project checks
+- _(check)_ Exclude vendor from project checks
 
 ## [0.2.0] - 2026-08-10
 
 ### 🚀 Features
 
-- *(webtrigger)* Add parseJsonBody and buildErrorCodeResponse utilities
+- _(webtrigger)_ Add parseJsonBody and buildErrorCodeResponse utilities
 
 ## [0.1.1] - 2026-08-09
 
 ### 🐛 Bug Fixes
 
-- *(packaging)* Support legacy TypeScript resolution
-- *(release)* Synchronize package lock version
+- _(packaging)_ Support legacy TypeScript resolution
+- _(release)_ Synchronize package lock version
 
 ## [0.1.0] - 2026-08-09
 
@@ -31,11 +31,11 @@
 
 - Add shared trigger contracts
 - Add trigger family contracts
-- *(webtrigger)* Add type-safe handlers
-- *(webtrigger)* Add success response helpers
-- *(webtrigger)* Add client header extraction
-- *(logging)* Add invocation logging wrapper
-- *(webtrigger)* Add Problem Details responses
+- _(webtrigger)_ Add type-safe handlers
+- _(webtrigger)_ Add success response helpers
+- _(webtrigger)_ Add client header extraction
+- _(logging)_ Add invocation logging wrapper
+- _(webtrigger)_ Add Problem Details responses
 
 ### 📚 Documentation
 
@@ -44,7 +44,7 @@
 
 ### 🧪 Testing
 
-- *(package)* Complete package validation
+- _(package)_ Complete package validation
 
 ### ⚙️ Miscellaneous Tasks
 
